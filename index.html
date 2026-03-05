@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery Launcher</title>
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    /* Body styling */
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom right, #89f7fe, #66a6ff);
+      color: #fff;
+      text-align: center;
+    }
+
+    /* Icon */
+    img.icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 4em;
+      margin: 0;
+    }
+
+    h2 {
+      font-size: 1.8em;
+      margin-top: 20px;
+      font-weight: normal;
+    }
+
+    /* Google Sign-In container */
+    #buttonDiv {
+      margin-top: 40px;
+    }
+
+    /* Proceed button */
+    #proceedBtn {
+      display: none; /* hidden until sign-in */
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 1.2em;
+      color: #66a6ff;
+      background-color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    #proceedBtn:hover {
+      background-color: #e0f7ff;
+    }
+  </style>
+</head>
+<body>
+  <!-- Local uploaded icon -->
+  <img src="gallery_icon.png" alt="Gallery Icon" class="icon">
+
+  <h1>Gallery Launcher</h1>
+  <h2>Welcome to My Photos</h2>
+
+  <!-- Google Sign-In button -->
+  <div id="buttonDiv"></div>
+
+  <!-- Proceed button -->
+  <button id="proceedBtn" onclick="goToUpload()">Proceed</button>
+
+  <script>
+    // Your Google Client ID
+    const CLIENT_ID = "110500986224-2h7avo7lhjem47sgl8ru8soa360jj7pj.apps.googleusercontent.com";
+
+    // Redirect to upload page
+    function goToUpload() {
+      window.location.href = "upload.html";
+    }
+
+    // Handle Google Sign-In success
+    function handleCredentialResponse(response) {
+      console.log("Encoded JWT ID token: " + response.credential);
+      // Show the Proceed button after sign-in
+      document.getElementById("proceedBtn").style.display = "block";
+    }
+
+    window.onload = function() {
+      google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredentialResponse
+      });
+
+      // Render the Google Sign-In button without text
+      google.accounts.id.renderButton(
+        document.getElementById("buttonDiv"),
+        { theme: "outline", size: "large", text: " " } // empty text
+      );
+    };
+  </script>
+</body>
+</html>
