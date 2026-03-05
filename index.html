@@ -34,12 +34,14 @@
       background-color: #27ae60;
     }
   </style>
+
+  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <h1>Welcome to Gallery Launcher</h1>
 
-  <!-- Google Sign-In button -->
+  <!-- Google Sign-In Button -->
   <div id="g_id_onload"
        data-client_id="YOUR_CLIENT_ID"
        data-login_uri=""
@@ -56,17 +58,17 @@
   </div>
 
   <!-- Proceed button -->
-  <button id="proceedBtn" onclick="goToUpload()">Proceed to Upload</button>
+  <button id="proceedBtn" onclick="goToUpload()">Proceed</button>
 
   <script>
-    // This function will redirect to your upload page
+    // Redirect to the upload page
     function goToUpload() {
-      window.location.href = "upload.html";
+      window.location.href = "upload.html"; // your upload page
     }
 
-    // Listen for Google Sign-In success
+    // Google Sign-In success callback
     function handleCredentialResponse(response) {
-      console.log("Google user signed in:", response);
+      console.log("User signed in:", response);
       // Show the Proceed button
       document.getElementById("proceedBtn").style.display = "block";
     }
@@ -76,9 +78,10 @@
         client_id: "YOUR_CLIENT_ID",
         callback: handleCredentialResponse
       });
+
       google.accounts.id.renderButton(
         document.querySelector(".g_id_signin"),
-        { theme: "outline", size: "large" }  // customization
+        { theme: "outline", size: "large" } // customize button
       );
     }
   </script>
