@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gallery Launcher</title>
+
+<style>
+
+body{
+background-image:url('https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?auto=format&fit=crop&w=1950&q=80');
+background-size:cover;
+background-position:center;
+background-repeat:no-repeat;
+
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+
+height:100vh;
+margin:0;
+font-family:Arial;
+}
+
+/* buttons */
+
+.btn{
+padding:15px 30px;
+font-size:20px;
+border:none;
+border-radius:10px;
+color:white;
+cursor:pointer;
+margin:10px;
+transition:0.3s;
+box-shadow:0 4px 6px rgba(0,0,0,0.3);
+}
+
+#uploadBtn{
+background-color:rgba(46,204,113,0.9);
+}
+
+#viewBtn{
+background-color:rgba(243,156,18,0.9);
+}
+
+</style>
+</head>
+
+<body>
+
+<input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+
+<button id="uploadBtn" class="btn">Upload</button>
+<button id="viewBtn" class="btn">View</button>
+
+<script>
+
+/* UPLOAD */
+
+document.getElementById("uploadBtn").addEventListener("click",function(){
+
+document.getElementById("fileInput").click();
+
+});
+
+document.getElementById("fileInput").addEventListener("change",function(event){
+
+const files = event.target.files;
+
+if(files.length>0){
+
+let storedPhotos = JSON.parse(localStorage.getItem("photos")) || [];
+
+Array.from(files).forEach(file=>{
+
+const reader = new FileReader();
+
+reader.onload = function(e){
+
+storedPhotos.push(e.target.result);
+
+localStorage.setItem("photos",JSON.stringify(storedPhotos));
+
+}
+
+reader.readAsDataURL(file);
+
+});
+
+alert("✅ Upload Successful");
+
+}
+
+});
+
+/* VIEW */
+
+document.getElementById("viewBtn").addEventListener("click",function(){
+
+window.location.href="gallery.html";
+
+});
+
+</script>
+
+</body>
+</html>
