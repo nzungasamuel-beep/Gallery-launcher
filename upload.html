@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload Photos</title>
+  <style>
+    /* Full-page background image */
+    body {
+      background-image: url('https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?auto=format&fit=crop&w=1950&q=80');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: white;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
+    }
+
+    /* Style for buttons */
+    .btn {
+      padding: 15px 30px;
+      font-size: 20px;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      margin: 10px; /* space between buttons */
+      transition: background-color 0.3s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    #uploadBtn {
+      background-color: rgba(46, 204, 113, 0.9); /* Green */
+    }
+    #uploadBtn:hover {
+      background-color: rgba(39, 174, 96, 0.9);
+    }
+
+    #viewBtn {
+      background-color: rgba(243, 156, 18, 0.9); /* Orange */
+    }
+    #viewBtn:hover {
+      background-color: rgba(230, 126, 34, 0.9);
+    }
+
+    h1 {
+      margin-bottom: 40px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome! Upload your photos</h1>
+
+  <!-- Hidden file input for uploading images -->
+  <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+
+  <!-- Buttons -->
+  <button id="uploadBtn" class="btn">Upload</button>
+  <button id="viewBtn" class="btn">View</button>
+
+  <script>
+    // Upload button opens device file picker
+    document.getElementById('uploadBtn').addEventListener('click', function() {
+      document.getElementById('fileInput').click();
+    });
+
+    // Handle selected files
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+      const files = event.target.files;
+      if (files.length > 0) {
+        alert(files.length + " photo(s) selected!");
+        // TODO: integrate Firebase Storage or backend to save files
+      }
+    });
+
+    // View button redirects to gallery page
+    document.getElementById('viewBtn').addEventListener('click', function() {
+      window.location.href = "gallery.html"; // create gallery.html next
+    });
+  </script>
+</body>
+</html>
