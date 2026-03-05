@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Photo Editor</title>
+<style>
+body {
+  background:#111;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+  margin:0;
+  padding:0;
+}
+#edit-container {position:relative; max-width:90%; margin:80px auto 60px auto;}
+#photo {display:block; max-width:100%; max-height:500px; margin:auto; transform-origin:center center;}
+.top-right-menu {position:fixed; top:10px; right:10px; z-index:1000; display:flex; gap:5px;}
+.menu-btn {font-size:16px; cursor:pointer; background:none; border:1px solid #3498db; border-radius:4px; color:#3498db; padding:6px 10px; position:relative;}
+.submenu {display:none; position:absolute; top:35px; left:0; background:#222; border:1px solid #555; border-radius:6px; min-width:180px; text-align:left; z-index:1000;}
+.submenu button, .submenu input {display:block; width:100%; padding:8px; background:none; border:none; color:white; cursor:pointer; text-align:left;}
+.submenu button:hover, .submenu input:hover {background:#333;}
+.bottom-btn {position:fixed; bottom:10px; padding:10px 20px; border:1px solid #3498db; border-radius:6px; background:none; color:#3498db; cursor:pointer; font-size:16px;}
+#back-btn {left:10px;} 
+#undo-btn {left:150px; display:none;}
+#redo-btn {left:220px; display:none;}
+#save-btn {right:10px;}
+#markup-canvas {position:absolute; top:0; left:0; display:none; z-index:50; pointer-events:none;}
+.submenu input[type="range"]{margin:5px 0;}
+</style>
+</head>
+<body>
+
+<div id="edit-container">
+  <img id="photo" src="">
+  <canvas id="markup-canvas"></canvas>
+</div>
+
+<!-- Top-right menu -->
+<div class="top-right-menu">
+  <div>
+    <button class="menu-btn" onclick="toggleSubmenu('crop-submenu')">Crop ▼</button>
+    <div class="submenu" id="crop-submenu">
+      Width %: <input type="range" id="widthRange" min="50" max="200" value="100"><br>
+      Height %: <input type="range" id="heightRange" min="50" max="200" value="100"><br>
+      Angle °: <input type="range" id="angleRange" min="0" max="360" value="0"><br>
+      <button onclick="mirrorPhoto()">Mirror</button>
+      <button onclick="resetTransform()">Reset</button>
+    </div>
+  </div>
+
+  <div>
+    <button class="menu-btn" onclick="toggleSubmenu('adjust-submenu')">Adjust ▼</button>
+    <div class="submenu" id="adjust-submenu">
+      Brightness: <input type="range" id="brightness" min="50" max="150" value="100"><br>
+      Contrast: <input type="range" id="contrast" min="50" max="150" value="100"><br>
+      Saturation: <input type="range" id="saturation" min="0" max="200" value="100">
+    </div>
+  </div>
+
+  <div>
+    <button class="menu-btn" onclick="toggleSubmenu('markup-submenu')">Markup ▼</button>
+    <div class="submenu" id="markup-submenu">
+      <button onclick="enableDraw()">Draw</button>
+      <button onclick="eraseDraw()">Erase</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom buttons -->
+<button id="back-btn" class="bottom-btn">Back</button>
+<button id="undo-btn" class="bottom-btn">⟲</button>
+<button id="redo-btn" class="bottom-btn">⟳</button>
+<button id="save-btn" class="bottom-btn">Save</button>
+
+<script>
+let photosToEdit = JSON.parse(localStorage.getItem("editPhotos")) || [];
+let photo = document.getElementById("photo");
+let markupCanvas = document.getElementById("markup-canvas");
+let ctx = markupCanvas.getContext("2d");
+
+let rotation=0, mirrored=false;
+let originalWidth=0, originalHeight=0;
+let history=[], redoStack=[];
+let unsavedChanges = false;
+
+// Load photo
+if(photosToEdit.length===0){ alert("No photo selected!"); window.location.href="gallery.html"; }
+else{
+  photo.src = photosToEdit[0];
+  photo.onload = ()=>{ 
+    originalWidth=photo.width; 
+    originalHeight=photo.height; 
+    markupCanvas.width = photo.clientWidth; 
+    markupCanvas.height = photo.clientHeight;
+    markupCanvas.style.top = photo.offsetTop+'px';
+    markupCanvas.style.left = photo.offsetLeft+'px';
+  }
+}
+
+// Dropdown toggle
+function toggleSubmenu(id){
+  document.querySelectorAll('.submenu').forEach(sm=>sm.style.display=(sm.id===id?(sm.style.display==='block'?'none':'block'):'none'));
+}
+
+// History
+function pushHistory(){
+  history.push(getCurrentState());
+  document.getElementById("undo-btn").style.display='inline-block';
+  redoStack=[];
+  document.getElementById("redo-btn").style.display='none';
+  unsavedChanges = true;
+}
+
+function getCurrentState(){
+  return {
+    width: photo.style.width,
+    height: photo.style.height,
+    rotation: rotation,
+    mirrored: mirrored,
+    markup: markupCanvas.toDataURL()
+  };
+}
+
+function applyState(state){
+  photo.style.width = state.width;
+  photo.style.height = state.height;
+  rotation = state.rotation;
+  mirrored = state.mirrored;
+  photo.style.transform = `rotate(${rotation}deg) ${mirrored?'scaleX(-1)':''}`;
+  let img = new Image(); img.src = state.markup;
+  img.onload = ()=>{ ctx.clearRect(0,0,markupCanvas.width,markupCanvas.height); ctx.drawImage(img,0,0,markupCanvas.width,markupCanvas.height);}
+}
+
+// Undo/Redo
+function undoEdit(){ 
+  if(history.length){ 
+    redoStack.push(getCurrentState()); 
+    applyState(history.pop()); 
+    document.getElementById("redo-btn").style.display='inline-block'; 
+    if(!history.length) document.getElementById("undo-btn").style.display='none'; 
+  } 
+}
+function redoEdit(){ 
+  if(redoStack.length){ 
+    history.push(getCurrentState()); 
+    applyState(redoStack.pop()); 
+    document.getElementById("undo-btn").style.display='inline-block'; 
+    if(!redoStack.length) document.getElementById("redo-btn").style.display='none'; 
+  } 
+}
+
+// Crop sliders
+function applyTransform(){
+  pushHistory();
+  let w = document.getElementById("widthRange").value;
+  let h = document.getElementById("heightRange").value;
+  let a = document.getElementById("angleRange").value;
+  photo.style.width = w+'%';
+  photo.style.height = h+'%';
+  rotation = a;
+  photo.style.transform = `rotate(${rotation}deg) ${mirrored?'scaleX(-1)':''}`;
+}
+
+document.getElementById("widthRange").addEventListener("change", applyTransform);
+document.getElementById("heightRange").addEventListener("change", applyTransform);
+document.getElementById("angleRange").addEventListener("change", applyTransform);
+
+function mirrorPhoto(){ pushHistory(); mirrored=!mirrored; photo.style.transform = `rotate(${rotation}deg) ${mirrored?'scaleX(-1)':''}`; }
+
+function resetTransform(){ 
+  pushHistory(); 
+  rotation=0; mirrored=false; 
+  photo.style.transform='rotate(0deg) scaleX(1)'; 
+  photo.style.width=originalWidth+'px'; 
+  photo.style.height=originalHeight+'px'; 
+  document.getElementById("widthRange").value=100; 
+  document.getElementById("heightRange").value=100;
+  document.getElementById("angleRange").value=0;
+}
+
+// Adjust
+function applyAdjust(){ 
+  pushHistory();
+  photo.style.filter=`brightness(${document.getElementById("brightness").value}%) contrast(${document.getElementById("contrast").value}%) saturate(${document.getElementById("saturation").value}%)`;
+}
+document.getElementById("brightness").addEventListener("input", applyAdjust);
+document.getElementById("contrast").addEventListener("input", applyAdjust);
+document.getElementById("saturation").addEventListener("input", applyAdjust);
+
+// Markup
+let drawing=false,lastX=0,lastY=0;
+function enableDraw(){ 
+  markupCanvas.style.display='block'; 
+  markupCanvas.style.pointerEvents='auto'; 
+  pushHistory();
+  ctx.lineWidth=3; ctx.strokeStyle='red'; 
+  markupCanvas.addEventListener('mousedown',startDraw); 
+  markupCanvas.addEventListener('mousemove',draw); 
+  markupCanvas.addEventListener('mouseup',stopDraw); 
+  markupCanvas.addEventListener('mouseout',stopDraw);
+}
+function startDraw(e){drawing=true; lastX=e.offsetX; lastY=e.offsetY;}
+function draw(e){if(!drawing) return; ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke(); lastX=e.offsetX; lastY=e.offsetY;}
+function stopDraw(){drawing=false;}
+function eraseDraw(){ pushHistory(); ctx.clearRect(0,0,markupCanvas.width,markupCanvas.height); }
+
+// Bottom buttons
+document.getElementById("back-btn").addEventListener("click", ()=>{
+    if(unsavedChanges){
+        if(confirm("Do you want to save changes before leaving?")){
+            savePhoto(true); 
+        } else {
+            window.location.href="gallery.html"; 
+        }
+    } else {
+        window.location.href="gallery.html"; 
+    }
+});
+document.getElementById("undo-btn").addEventListener("click", undoEdit);
+document.getElementById("redo-btn").addEventListener("click", redoEdit);
+
+// Save
+document.getElementById("save-btn").addEventListener("click", ()=>{
+    if(confirm("Do you want to save the edited photo?")){
+        savePhoto(false);
+    }
+});
+
+function savePhoto(auto=false){
+    let canvas=document.createElement("canvas"); 
+    canvas.width=photo.naturalWidth; 
+    canvas.height=photo.naturalHeight;
+    let ctx2=canvas.getContext("2d"); 
+    ctx2.drawImage(photo,0,0,canvas.width,canvas.height);
+    
+    if(markupCanvas.style.display!=="none"){
+        let img=new Image(); 
+        img.src=markupCanvas.toDataURL();
+        img.onload=()=>{
+            ctx2.drawImage(img,0,0,canvas.width,canvas.height); 
+            let a=document.createElement("a"); 
+            a.href=canvas.toDataURL(); 
+            a.download="edited_photo.png"; 
+            a.click(); 
+            unsavedChanges = false;
+            if(!auto) alert("Photo saved!"); 
+            if(auto) window.location.href="gallery.html"; 
+        }
+    } else {
+        let a=document.createElement("a"); 
+        a.href=canvas.toDataURL(); 
+        a.download="edited_photo.png"; 
+        a.click(); 
+        unsavedChanges = false;
+        if(!auto) alert("Photo saved!"); 
+        if(auto) window.location.href="gallery.html"; 
+    }
+}
+
+// Warn before closing tab/window
+window.addEventListener('beforeunload', function (e) {
+  if(unsavedChanges){
+    e.preventDefault();
+    e.returnValue = ''; 
+  }
+});
+</script>
+</body>
+</html>
